@@ -13,9 +13,9 @@ struct Ball {
 
 #[derive(Event)]
 enum BallTouchedEdge {
-    Left,
-    Right,
-    Top,
+    Left(Entity),
+    Right(Entity),
+    Top(Entity),
 }
 
 #[derive(Resource, Debug, Default)]
@@ -38,23 +38,24 @@ impl Plugin for BallPlugin {
 }
 
 fn detect_edge(
-    ball: Query<(&Ball, &GlobalTransform)>,
+    ball: Query<(&Ball, &GlobalTransform, Entity)>,
     window: Query<&Window, With<PrimaryWindow>>,
     mut writer: EventWriter<BallTouchedEdge>,
 ) {
-    let (ball, transform) = ball.single();
     let window = window.single();
 
-    if transform.translation().y >= (window.height() / 2.0) - ball.radius {
-        writer.send(BallTouchedEdge::Top);
-    }
+    for (ball, transform, entity) in &ball {
+        if transform.translation().y >= (window.height() / 2.0) - ball.radius {
+            writer.send(BallTouchedEdge::Top(entity));
+        }
 
-    if transform.translation().x >= (window.width() / 2.0) - ball.radius {
-        writer.send(BallTouchedEdge::Right);
-    }
+        if transform.translation().x >= (window.width() / 2.0) - ball.radius {
+            writer.send(BallTouchedEdge::Right(entity));
+        }
 
-    if transform.translation().x <= (-window.width() / 2.0) + ball.radius {
-        writer.send(BallTouchedEdge::Right);
+        if transform.translation().x <= (-window.width() / 2.0) + ball.radius {
+            writer.send(BallTouchedEdge::Left(entity));
+        }
     }
 }
 
@@ -85,22 +86,33 @@ fn spawn_ball(
 }
 
 fn move_ball(mut ball: Query<(&mut Transform, &Speed), With<Ball>>, time: Res<Time>) {
-    let (mut transform, speed) = ball.single_mut();
-
-    transform.translation.y += speed.0.y * time.delta_seconds();
-    transform.translation.x -= speed.0.x * time.delta_seconds();
+    for (mut transform, speed) in &mut ball {
+        transform.translation.y += speed.0.y * time.delta_seconds();
+        transform.translation.x -= speed.0.x * time.delta_seconds();
+    }
 }
 
 fn change_ball_direction(
-    mut ball: Query<&mut Speed, With<Ball>>,
+    mut balls: Query<&mut Speed, With<Ball>>,
     mut reader: EventReader<BallTouchedEdge>,
 ) {
-    let mut speed = ball.single_mut();
     for event in reader.iter() {
         match event {
-            BallTouchedEdge::Left => speed.0.x *= -1.0,
-            BallTouchedEdge::Right => speed.0.x *= -1.0,
-            BallTouchedEdge::Top => speed.0.y *= -1.0,
+            BallTouchedEdge::Left(entity) => {
+                if let Ok(mut speed) = balls.get_mut(*entity) {
+                    speed.0.x *= -1.0;
+                }
+            }
+            BallTouchedEdge::Right(entity) => {
+                if let Ok(mut speed) = balls.get_mut(*entity) {
+                    speed.0.x *= -1.0;
+                }
+            }
+            BallTouchedEdge::Top(entity) => {
+                if let Ok(mut speed) = balls.get_mut(*entity) {
+                    speed.0.y *= -1.0;
+                }
+            }
         };
     }
 }
