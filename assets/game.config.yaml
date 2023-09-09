@@ -1,0 +1,20 @@
+ball:
+  radius: 10.0
+  color: !Rgba {
+    red: 1.0,
+    green: 1.0,
+    blue: 1.0,
+    alpha: 1.0,
+  }
+  initial_speed: 200.0
+paddle:
+  width: 150.0
+  height: 15.0
+  offset_from_bottom: 20.0
+  color: !Rgba {
+    red: 1.0,
+    green: 1.0,
+    blue: 1.0,
+    alpha: 1.0,
+  }
+  initial_speed: 200.0
