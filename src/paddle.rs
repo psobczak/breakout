@@ -9,15 +9,17 @@ use crate::{
 pub struct Speed(pub Vec2);
 
 #[derive(Component)]
-pub struct Paddle {
-    pub size: Vec2,
-}
+pub struct Paddle;
+
+#[derive(Component, Reflect)]
+pub struct Dimensions(pub Vec2);
 
 pub struct PaddlePlugin;
 
 impl Plugin for PaddlePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Speed>()
+            .register_type::<Dimensions>()
             .add_systems(OnEnter(GameState::Game), spawn_paddle)
             .add_systems(
                 Update,
@@ -40,9 +42,8 @@ fn spawn_paddle(
 
     commands.spawn((
         Speed(Vec2::new(config.paddle.initial_speed, 0.0)),
-        Paddle {
-            size: Vec2::new(config.paddle.width, config.paddle.height),
-        },
+        Paddle,
+        Dimensions(Vec2::new(config.paddle.width, config.paddle.height)),
         SpriteBundle {
             sprite: Sprite {
                 custom_size: Some(Vec2::new(config.paddle.width, config.paddle.height)),

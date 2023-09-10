@@ -1,25 +1,17 @@
 use bevy::{
     prelude::*,
     sprite::{collide_aabb::collide, MaterialMesh2dBundle},
-    window::PrimaryWindow,
 };
 
 use crate::{
     config::{Config, GameConfig},
     game::GameState,
-    paddle::{Paddle, Speed},
+    paddle::{Dimensions, Speed},
 };
 
 #[derive(Component)]
 struct Ball {
     radius: f32,
-}
-
-#[derive(Event)]
-enum BallTouchedEdge {
-    Left(Entity),
-    Right(Entity),
-    Top(Entity),
 }
 
 #[derive(Resource, Debug, Default)]
@@ -30,62 +22,33 @@ pub struct BallPlugin;
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Bounces::default())
-            .add_event::<BallTouchedEdge>()
             .add_systems(OnEnter(GameState::Game), spawn_ball)
             .add_systems(
                 Update,
-                ((
-                    detect_edge,
-                    bounce_off_paddle,
-                    change_ball_direction,
-                    move_ball,
-                )
-                    .chain(),)
-                    .distributive_run_if(in_state(GameState::Game)),
+                ((bounce_ball, move_ball).chain(),).distributive_run_if(in_state(GameState::Game)),
             );
     }
 }
 
-fn detect_edge(
-    ball: Query<(&Ball, &GlobalTransform, Entity)>,
-    window: Query<&Window, With<PrimaryWindow>>,
-    mut writer: EventWriter<BallTouchedEdge>,
-) {
-    let window = window.single();
-
-    for (ball, transform, entity) in &ball {
-        if transform.translation().y >= (window.height() / 2.0) - ball.radius {
-            writer.send(BallTouchedEdge::Top(entity));
-        }
-
-        if transform.translation().x >= (window.width() / 2.0) - ball.radius {
-            writer.send(BallTouchedEdge::Right(entity));
-        }
-
-        if transform.translation().x <= (-window.width() / 2.0) + ball.radius {
-            writer.send(BallTouchedEdge::Left(entity));
-        }
-    }
-}
-
-fn bounce_off_paddle(
+fn bounce_ball(
     mut balls: Query<(&mut Speed, &Ball, &GlobalTransform), With<Ball>>,
-    paddle: Query<(&GlobalTransform, &Paddle)>,
+    bouncable: Query<(&GlobalTransform, &Dimensions)>,
 ) {
-    let (paddle_transform, paddle) = paddle.single();
-
-    for (mut speed, ball, ball_transform) in &mut balls {
-        if let Some(collision) = collide(
-            ball_transform.translation(),
-            Vec2::splat(ball.radius),
-            paddle_transform.translation(),
-            paddle.size,
-        ) {
-            match collision {
-                bevy::sprite::collide_aabb::Collision::Left => speed.0.x *= -1.0,
-                bevy::sprite::collide_aabb::Collision::Right => speed.0.x *= -1.0,
-                bevy::sprite::collide_aabb::Collision::Top => speed.0.y *= -1.0,
-                _ => {}
+    for (paddle_transform, dimensions) in &bouncable {
+        for (mut speed, ball, ball_transform) in &mut balls {
+            if let Some(collision) = collide(
+                ball_transform.translation(),
+                Vec2::splat(ball.radius),
+                paddle_transform.translation(),
+                dimensions.0,
+            ) {
+                match collision {
+                    bevy::sprite::collide_aabb::Collision::Left => speed.0.x *= -1.0,
+                    bevy::sprite::collide_aabb::Collision::Right => speed.0.x *= -1.0,
+                    bevy::sprite::collide_aabb::Collision::Top => speed.0.y *= -1.0,
+                    bevy::sprite::collide_aabb::Collision::Bottom => speed.0.y *= -1.0,
+                    bevy::sprite::collide_aabb::Collision::Inside => {}
+                }
             }
         }
     }
@@ -114,6 +77,7 @@ fn spawn_ball(
             radius: config.ball.radius,
         },
         Speed(Vec2::new(config.ball.initial_speed, 150.0)),
+        Name::from("Ball"),
     ));
 }
 
@@ -121,30 +85,5 @@ fn move_ball(mut ball: Query<(&mut Transform, &Speed), With<Ball>>, time: Res<Ti
     for (mut transform, speed) in &mut ball {
         transform.translation.y += speed.0.y * time.delta_seconds();
         transform.translation.x -= speed.0.x * time.delta_seconds();
-    }
-}
-
-fn change_ball_direction(
-    mut balls: Query<&mut Speed, With<Ball>>,
-    mut reader: EventReader<BallTouchedEdge>,
-) {
-    for event in reader.iter() {
-        match event {
-            BallTouchedEdge::Left(entity) => {
-                if let Ok(mut speed) = balls.get_mut(*entity) {
-                    speed.0.x *= -1.0;
-                }
-            }
-            BallTouchedEdge::Right(entity) => {
-                if let Ok(mut speed) = balls.get_mut(*entity) {
-                    speed.0.x *= -1.0;
-                }
-            }
-            BallTouchedEdge::Top(entity) => {
-                if let Ok(mut speed) = balls.get_mut(*entity) {
-                    speed.0.y *= -1.0;
-                }
-            }
-        };
     }
 }
