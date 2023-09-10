@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_prototype_debug_lines::*;
 
 use crate::{
     config::{Config, GameConfig},
@@ -23,7 +24,7 @@ impl Plugin for PaddlePlugin {
             .add_systems(OnEnter(GameState::Game), spawn_paddle)
             .add_systems(
                 Update,
-                (move_paddle,).distributive_run_if(in_state(GameState::Game)),
+                (move_paddle, draw_debug_lines).distributive_run_if(in_state(GameState::Game)),
             );
     }
 }
@@ -73,5 +74,25 @@ fn move_paddle(
 
     if input.any_pressed([KeyCode::Right, KeyCode::D]) {
         transform.translation.x += time.delta_seconds() * speed.0.x
+    }
+}
+
+fn draw_debug_lines(
+    mut lines: ResMut<DebugLines>,
+    paddle: Query<&GlobalTransform, With<Paddle>>,
+    window: Query<&Window, With<PrimaryWindow>>,
+    camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+) {
+    let paddle_transform = paddle.single();
+    let window = window.single();
+    let (camera, camera_transform) = camera.single();
+
+    if let Some(position) = window.cursor_position() {
+        let start = paddle_transform.translation();
+        let duration = 0.0;
+
+        if let Some(world_position) = camera.viewport_to_world_2d(camera_transform, position) {
+            lines.line(start, world_position.extend(0.0), duration);
+        }
     }
 }

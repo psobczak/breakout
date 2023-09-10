@@ -1,5 +1,6 @@
 use bevy::{input::common_conditions::input_toggle_active, prelude::*, window::PrimaryWindow};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_prototype_debug_lines::*;
 
 use crate::{
     ball::BallPlugin,
@@ -23,6 +24,7 @@ impl Plugin for GamePlugin {
             .add_plugins((
                 DefaultPlugins,
                 WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Slash)),
+                DebugLinesPlugin::default(),
                 BallPlugin,
                 ConfigPlugin,
                 PaddlePlugin,
@@ -44,7 +46,7 @@ fn spawn_bounding_box(mut commands: Commands, window: Query<&Window, With<Primar
                 color: Color::GRAY,
                 ..Default::default()
             },
-            transform: Transform::from_xyz(0.0, 0.0, - 1.0),
+            transform: Transform::from_xyz(0.0, 0.0, -1.0),
             ..Default::default()
         },
         Dimensions(Vec2::new(window.width(), window.height())),
