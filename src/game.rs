@@ -6,6 +6,7 @@ use crate::{
     ball::BallPlugin,
     config::ConfigPlugin,
     paddle::{Dimensions, PaddlePlugin},
+    ui::UiPlugin,
 };
 
 pub struct GamePlugin;
@@ -28,6 +29,7 @@ impl Plugin for GamePlugin {
                 BallPlugin,
                 ConfigPlugin,
                 PaddlePlugin,
+                UiPlugin,
             ))
             .add_systems(Startup, (spawn_camera, spawn_bounding_box));
     }

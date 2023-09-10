@@ -15,7 +15,7 @@ struct Ball {
 }
 
 #[derive(Resource, Debug, Default)]
-struct Bounces(u32);
+pub struct Bounces(pub u32);
 
 pub struct BallPlugin;
 
@@ -33,6 +33,7 @@ impl Plugin for BallPlugin {
 fn bounce_ball(
     mut balls: Query<(&mut Speed, &Ball, &GlobalTransform), With<Ball>>,
     bouncable: Query<(&GlobalTransform, &Dimensions)>,
+    mut bounces: ResMut<Bounces>,
 ) {
     for (paddle_transform, dimensions) in &bouncable {
         for (mut speed, ball, ball_transform) in &mut balls {
@@ -43,12 +44,24 @@ fn bounce_ball(
                 dimensions.0,
             ) {
                 match collision {
-                    bevy::sprite::collide_aabb::Collision::Left => speed.0.x *= -1.0,
-                    bevy::sprite::collide_aabb::Collision::Right => speed.0.x *= -1.0,
-                    bevy::sprite::collide_aabb::Collision::Top => speed.0.y *= -1.0,
-                    bevy::sprite::collide_aabb::Collision::Bottom => speed.0.y *= -1.0,
+                    bevy::sprite::collide_aabb::Collision::Left => {
+                        speed.0.x *= -1.0;
+                        bounces.0 += 1;
+                    }
+                    bevy::sprite::collide_aabb::Collision::Right => {
+                        speed.0.x *= -1.0;
+                        bounces.0 += 1;
+                    }
+                    bevy::sprite::collide_aabb::Collision::Top => {
+                        speed.0.y *= -1.0;
+                        bounces.0 += 1;
+                    }
+                    bevy::sprite::collide_aabb::Collision::Bottom => {
+                        speed.0.y *= -1.0;
+                        bounces.0 += 1;
+                    }
                     bevy::sprite::collide_aabb::Collision::Inside => {}
-                }
+                };
             }
         }
     }
