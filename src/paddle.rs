@@ -9,7 +9,9 @@ use crate::{
 pub struct Speed(pub Vec2);
 
 #[derive(Component)]
-pub struct Paddle;
+pub struct Paddle {
+    pub size: Vec2,
+}
 
 pub struct PaddlePlugin;
 
@@ -38,7 +40,9 @@ fn spawn_paddle(
 
     commands.spawn((
         Speed(Vec2::new(config.paddle.initial_speed, 0.0)),
-        Paddle,
+        Paddle {
+            size: Vec2::new(config.paddle.width, config.paddle.height),
+        },
         SpriteBundle {
             sprite: Sprite {
                 custom_size: Some(Vec2::new(config.paddle.width, config.paddle.height)),

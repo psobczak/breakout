@@ -1,9 +1,9 @@
 ball:
   radius: 10.0
-  color: !Rgba {
-    red: 1.0,
-    green: 1.0,
-    blue: 1.0,
+  color: !Hsla {
+    hue: 179,
+    saturation: 0.82,
+    lightness: 0.56,
     alpha: 1.0,
   }
   initial_speed: 200.0

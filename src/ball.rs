@@ -1,9 +1,13 @@
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    sprite::{collide_aabb::collide, MaterialMesh2dBundle},
+    window::PrimaryWindow,
+};
 
 use crate::{
     config::{Config, GameConfig},
     game::GameState,
-    paddle::Speed,
+    paddle::{Paddle, Speed},
 };
 
 #[derive(Component)]
@@ -30,8 +34,13 @@ impl Plugin for BallPlugin {
             .add_systems(OnEnter(GameState::Game), spawn_ball)
             .add_systems(
                 Update,
-                (detect_edge, change_ball_direction, move_ball)
-                    .chain()
+                ((
+                    detect_edge,
+                    bounce_off_paddle,
+                    change_ball_direction,
+                    move_ball,
+                )
+                    .chain(),)
                     .distributive_run_if(in_state(GameState::Game)),
             );
     }
@@ -55,6 +64,29 @@ fn detect_edge(
 
         if transform.translation().x <= (-window.width() / 2.0) + ball.radius {
             writer.send(BallTouchedEdge::Left(entity));
+        }
+    }
+}
+
+fn bounce_off_paddle(
+    mut balls: Query<(&mut Speed, &Ball, &GlobalTransform), With<Ball>>,
+    paddle: Query<(&GlobalTransform, &Paddle)>,
+) {
+    let (paddle_transform, paddle) = paddle.single();
+
+    for (mut speed, ball, ball_transform) in &mut balls {
+        if let Some(collision) = collide(
+            ball_transform.translation(),
+            Vec2::splat(ball.radius),
+            paddle_transform.translation(),
+            paddle.size,
+        ) {
+            match collision {
+                bevy::sprite::collide_aabb::Collision::Left => speed.0.x *= -1.0,
+                bevy::sprite::collide_aabb::Collision::Right => speed.0.x *= -1.0,
+                bevy::sprite::collide_aabb::Collision::Top => speed.0.y *= -1.0,
+                _ => {}
+            }
         }
     }
 }
