@@ -38,6 +38,7 @@ pub struct BallConfig {
     pub radius: f32,
     pub color: Color,
     pub initial_speed: f32,
+    pub speed_increase: f32,
 }
 
 #[derive(serde::Deserialize, Debug)]

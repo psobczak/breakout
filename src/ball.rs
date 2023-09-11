@@ -25,8 +25,27 @@ impl Plugin for BallPlugin {
             .add_systems(OnEnter(GameState::Game), spawn_ball)
             .add_systems(
                 Update,
-                ((bounce_ball, move_ball).chain(),).distributive_run_if(in_state(GameState::Game)),
+                (
+                    (bounce_ball, move_ball).chain(),
+                    increase_ball_speed.run_if(resource_changed::<Bounces>()),
+                )
+                    .distributive_run_if(in_state(GameState::Game)),
             );
+    }
+}
+
+fn increase_ball_speed(
+    mut balls: Query<&mut Speed, With<Ball>>,
+    game_config: Res<GameConfig>,
+    assets: Res<Assets<Config>>,
+) {
+    let Some(config) = assets.get(&game_config.config) else {
+        panic!("game config could not be loaded")
+    };
+
+    for mut speed in &mut balls {
+        speed.0.x += speed.0.x * (config.ball.speed_increase / 100.0);
+        speed.0.y += speed.0.y * (config.ball.speed_increase / 100.0);
     }
 }
 
