@@ -4,6 +4,7 @@ use bevy_prototype_debug_lines::*;
 
 use crate::{
     ball::BallPlugin,
+    block::BlockPlugin,
     config::ConfigPlugin,
     paddle::{Dimensions, PaddlePlugin},
     ui::UiPlugin,
@@ -16,7 +17,13 @@ pub enum GameState {
     #[default]
     AssetLoading,
     Menu,
-    Game,
+    InGame,
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub enum SpawningSet {
+    Spawn,
+    Despawn,
 }
 
 impl Plugin for GamePlugin {
@@ -30,7 +37,10 @@ impl Plugin for GamePlugin {
                 ConfigPlugin,
                 PaddlePlugin,
                 UiPlugin,
+                BlockPlugin,
             ))
+            .configure_set(OnEnter(GameState::InGame), SpawningSet::Spawn)
+            .configure_set(OnExit(GameState::InGame), SpawningSet::Despawn)
             .add_systems(Startup, (spawn_camera, spawn_bounding_box));
     }
 }

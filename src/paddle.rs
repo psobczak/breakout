@@ -3,7 +3,7 @@ use bevy_prototype_debug_lines::*;
 
 use crate::{
     config::{Config, GameConfig},
-    game::GameState,
+    game::{GameState, SpawningSet},
 };
 
 #[derive(Component, Deref, DerefMut, Debug, Reflect)]
@@ -21,10 +21,13 @@ impl Plugin for PaddlePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Speed>()
             .register_type::<Dimensions>()
-            .add_systems(OnEnter(GameState::Game), spawn_paddle)
+            .add_systems(
+                OnEnter(GameState::InGame),
+                spawn_paddle.in_set(SpawningSet::Spawn),
+            )
             .add_systems(
                 Update,
-                (move_paddle, draw_debug_lines).distributive_run_if(in_state(GameState::Game)),
+                (move_paddle, draw_debug_lines).distributive_run_if(in_state(GameState::InGame)),
             );
     }
 }

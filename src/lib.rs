@@ -1,4 +1,5 @@
 mod ball;
+mod block;
 mod config;
 mod game;
 mod paddle;

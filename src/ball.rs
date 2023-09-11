@@ -5,7 +5,7 @@ use bevy::{
 
 use crate::{
     config::{Config, GameConfig},
-    game::GameState,
+    game::{GameState, SpawningSet},
     paddle::{Dimensions, Speed},
 };
 
@@ -22,14 +22,17 @@ pub struct BallPlugin;
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Bounces::default())
-            .add_systems(OnEnter(GameState::Game), spawn_ball)
+            .add_systems(
+                OnEnter(GameState::InGame),
+                spawn_ball.in_set(SpawningSet::Spawn),
+            )
             .add_systems(
                 Update,
                 (
                     (bounce_ball, move_ball).chain(),
                     increase_ball_speed.run_if(resource_changed::<Bounces>()),
                 )
-                    .distributive_run_if(in_state(GameState::Game)),
+                    .distributive_run_if(in_state(GameState::InGame)),
             );
     }
 }
@@ -103,6 +106,7 @@ fn spawn_ball(
                 .add(shape::Circle::new(config.ball.radius).into())
                 .into(),
             material: materials.add(ColorMaterial::from(config.ball.color)),
+            transform: Transform::from_xyz(0.0, -100.0, 0.0),
             ..default()
         },
         Ball {

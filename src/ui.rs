@@ -9,7 +9,7 @@ impl Plugin for UiPlugin {
         app.add_systems(Startup, (setup,)).add_systems(
             Update,
             (update_ui.run_if(resource_changed::<Bounces>()),)
-                .distributive_run_if(in_state(GameState::Game)),
+                .distributive_run_if(in_state(GameState::InGame)),
         );
     }
 }

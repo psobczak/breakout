@@ -19,3 +19,6 @@ paddle:
     alpha: 1.0,
   }
   initial_speed: 200.0
+block:
+  width: 50.0
+  height: 20.0
