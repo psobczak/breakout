@@ -1,6 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
+    ball::BallBouncedEvent,
     config::{Config, GameConfig},
     game::GameState,
     paddle::Dimensions,
@@ -10,7 +11,8 @@ pub struct BlockPlugin;
 
 impl Plugin for BlockPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::InGame), (spawn_blocks,));
+        app.add_systems(OnEnter(GameState::InGame), (spawn_blocks,))
+            .add_systems(Update, (hit_block,).run_if(in_state(GameState::InGame)));
     }
 }
 
@@ -21,7 +23,7 @@ pub fn spawn_blocks(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     assets: Res<Assets<Config>>,
-    window: Query<&Window, With<PrimaryWindow>>,
+    // window: Query<&Window, With<PrimaryWindow>>,
 ) {
     let Some(config) = assets.get(&game_config.config) else {
         panic!("game config could not be loaded")
@@ -59,4 +61,16 @@ pub fn spawn_blocks(
                 }
             }
         });
+}
+
+fn hit_block(
+    mut commands: Commands,
+    mut reader: EventReader<BallBouncedEvent>,
+    blocks: Query<With<Block>>,
+) {
+    for event in reader.iter() {
+        if let Ok(_) = blocks.get(event.0) {
+            commands.entity(event.0).despawn_recursive();
+        }
+    }
 }

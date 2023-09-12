@@ -1,6 +1,9 @@
 use bevy::{
     prelude::*,
-    sprite::{collide_aabb::collide, MaterialMesh2dBundle},
+    sprite::{
+        collide_aabb::{collide, Collision},
+        MaterialMesh2dBundle,
+    },
 };
 
 use crate::{
@@ -16,12 +19,12 @@ struct Ball {
 
 #[derive(Resource, Debug, Default)]
 pub struct Bounces(pub u32);
-
 pub struct BallPlugin;
 
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Bounces::default())
+        app.add_event::<BallBouncedEvent>()
+            .insert_resource(Bounces::default())
             .add_systems(
                 OnEnter(GameState::InGame),
                 spawn_ball.in_set(SpawningSet::Spawn),
@@ -36,6 +39,9 @@ impl Plugin for BallPlugin {
             );
     }
 }
+
+#[derive(Event)]
+pub struct BallBouncedEvent(pub Entity);
 
 fn increase_ball_speed(
     mut balls: Query<&mut Speed, With<Ball>>,
@@ -54,10 +60,11 @@ fn increase_ball_speed(
 
 fn bounce_ball(
     mut balls: Query<(&mut Speed, &Ball, &GlobalTransform), With<Ball>>,
-    bouncable: Query<(&GlobalTransform, &Dimensions)>,
+    bouncable: Query<(&GlobalTransform, &Dimensions, Entity)>,
     mut bounces: ResMut<Bounces>,
+    mut writer: EventWriter<BallBouncedEvent>,
 ) {
-    for (paddle_transform, dimensions) in &bouncable {
+    for (paddle_transform, dimensions, entity) in &bouncable {
         for (mut speed, ball, ball_transform) in &mut balls {
             if let Some(collision) = collide(
                 ball_transform.translation(),
@@ -66,23 +73,17 @@ fn bounce_ball(
                 dimensions.0,
             ) {
                 match collision {
-                    bevy::sprite::collide_aabb::Collision::Left => {
+                    Collision::Left | Collision::Right => {
                         speed.0.x *= -1.0;
                         bounces.0 += 1;
+                        writer.send(BallBouncedEvent(entity));
                     }
-                    bevy::sprite::collide_aabb::Collision::Right => {
-                        speed.0.x *= -1.0;
-                        bounces.0 += 1;
-                    }
-                    bevy::sprite::collide_aabb::Collision::Top => {
+                    Collision::Top | Collision::Bottom => {
                         speed.0.y *= -1.0;
                         bounces.0 += 1;
+                        writer.send(BallBouncedEvent(entity));
                     }
-                    bevy::sprite::collide_aabb::Collision::Bottom => {
-                        speed.0.y *= -1.0;
-                        bounces.0 += 1;
-                    }
-                    bevy::sprite::collide_aabb::Collision::Inside => {}
+                    Collision::Inside => {}
                 };
             }
         }
