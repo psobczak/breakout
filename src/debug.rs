@@ -6,16 +6,26 @@ use crate::game::GameState;
 pub struct DebugPlugin;
 
 #[derive(Resource, Default)]
-pub struct MousePosition(pub Vec2);
+pub struct MousePosition {
+    pub world: Vec2,
+    pub viewport: Vec2,
+}
 
 #[derive(Resource, Default, Debug)]
-struct Drag {
-    start: Option<Vec2>,
-    end: Option<Vec2>,
+pub struct Drag {
+    pub start: Option<Vec2>,
+    pub end: Option<Vec2>,
+}
+
+#[derive(Event)]
+pub enum DragEvent {
+    Start { world: Vec2, viewport: Vec2 },
+    Dragging(Vec2),
+    Stop,
 }
 
 impl Drag {
-    fn distance(&self) -> Option<f32> {
+    pub fn distance(&self) -> Option<f32> {
         if let Some(start) = self.start {
             if let Some(end) = self.end {
                 return Some(start.distance(end));
@@ -25,22 +35,41 @@ impl Drag {
     }
 }
 
-fn handle_drag_event(
+fn handle_drag(mut reader: EventReader<DragEvent>, mut drag: ResMut<Drag>) {
+    for event in reader.iter() {
+        match event {
+            DragEvent::Start { world, .. } => {
+                drag.start = Some(*world);
+            }
+            DragEvent::Dragging(position) => {
+                drag.end = Some(*position);
+            }
+            DragEvent::Stop => {
+                drag.start = None;
+                drag.end = None;
+            }
+        }
+    }
+}
+
+fn send_drag_event(
     input: Res<Input<MouseButton>>,
     mouse_position: Res<MousePosition>,
-    mut drag: ResMut<Drag>,
+    mut writer: EventWriter<DragEvent>,
 ) {
-    if input.pressed(MouseButton::Left) {
-        if drag.start.is_none() {
-            drag.start = Some(mouse_position.0);
-        }
+    if input.just_pressed(MouseButton::Left) {
+        writer.send(DragEvent::Start {
+            world: mouse_position.world,
+            viewport: mouse_position.viewport,
+        });
+    }
 
-        drag.end = Some(mouse_position.0);
+    if input.pressed(MouseButton::Left) {
+        writer.send(DragEvent::Dragging(mouse_position.world));
     }
 
     if input.just_released(MouseButton::Left) {
-        drag.start = None;
-        drag.end = None;
+        writer.send(DragEvent::Stop);
     }
 }
 
@@ -48,10 +77,11 @@ impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(MousePosition::default())
             .insert_resource(Drag::default())
+            .add_event::<DragEvent>()
             .add_systems(Update, (update_mouse_position,))
             .add_systems(
                 Update,
-                (handle_drag_event, draw_measuring_tape)
+                (send_drag_event, handle_drag, draw_measuring_tape)
                     .distributive_run_if(in_state(GameState::InGame)),
             );
     }
@@ -66,9 +96,10 @@ fn update_mouse_position(
     let (camera, camera_transform) = camera.single();
 
     if let Some(cursor_postion) = window.cursor_position() {
+        mouse_position.viewport = cursor_postion;
         if let Some(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_postion)
         {
-            mouse_position.0 = world_position;
+            mouse_position.world = world_position;
         }
     }
 }
@@ -78,7 +109,6 @@ fn draw_measuring_tape(drag: Res<Drag>, mut lines: ResMut<DebugLines>) {
     if let Some(start) = drag.start {
         if let Some(end) = drag.end {
             lines.line(start.extend(0.0), end.extend(0.0), duration);
-            info!("{:?}", drag.distance())
         }
     }
 }

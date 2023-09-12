@@ -1,20 +1,30 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{ball::Bounces, debug::MousePosition, game::GameState};
+use crate::{
+    ball::Bounces,
+    debug::{Drag, DragEvent, MousePosition},
+    game::GameState,
+};
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (setup,)).add_systems(
-            Update,
-            (
-                update_bounce_counter.run_if(resource_changed::<Bounces>()),
-                (update_mouse_coordinates,)
-                    .distributive_run_if(resource_changed::<MousePosition>()),
+        app.add_systems(Startup, (setup,))
+            .add_systems(
+                Update,
+                (update_bounce_counter.run_if(resource_changed::<Bounces>()),)
+                    .distributive_run_if(in_state(GameState::InGame)),
             )
-                .distributive_run_if(in_state(GameState::InGame)),
-        );
+            .add_systems(
+                Update,
+                (
+                    spawn_measuring_tape,
+                    update_mouse_coordinates.run_if(resource_changed::<MousePosition>()),
+                    (update_measuring_tape_length, despawn_measuring_tape)
+                        .distributive_run_if(any_with_component::<MeasuringTape>()),
+                ),
+            );
     }
 }
 
@@ -29,19 +39,15 @@ struct MeasuringTape;
 
 fn setup(mut commands: Commands) {
     commands.spawn((
-        // Create a TextBundle that has a Text with a single section.
         TextBundle::from_section(
-            // Accepts a `String` or any type that converts into a `String`, such as `&str`
             "",
             TextStyle {
-                // This font is loaded and will be used instead of the default font.
                 font_size: 30.0,
                 color: Color::WHITE,
                 ..Default::default()
             },
-        ) // Set the alignment of the Text
+        )
         .with_text_alignment(TextAlignment::Center)
-        // Set the style of the TextBundle itself.
         .with_style(Style {
             position_type: PositionType::Absolute,
             bottom: Val::Px(5.0),
@@ -52,19 +58,15 @@ fn setup(mut commands: Commands) {
     ));
 
     commands.spawn((
-        // Create a TextBundle that has a Text with a single section.
         TextBundle::from_section(
-            // Accepts a `String` or any type that converts into a `String`, such as `&str`
             "",
             TextStyle {
-                // This font is loaded and will be used instead of the default font.
                 font_size: 20.0,
                 color: Color::WHITE,
                 ..Default::default()
             },
-        ) // Set the alignment of the Text
+        )
         .with_text_alignment(TextAlignment::Center)
-        // Set the style of the TextBundle itself.
         .with_style(Style {
             position_type: PositionType::Absolute,
             bottom: Val::Px(5.0),
@@ -73,6 +75,49 @@ fn setup(mut commands: Commands) {
         }),
         MouseCoordinates,
     ));
+}
+
+fn spawn_measuring_tape(
+    mut commands: Commands,
+    mut reader: EventReader<DragEvent>,
+    window: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window.single();
+
+    for event in reader.iter() {
+        if let DragEvent::Start { viewport, .. } = event {
+            let text_bundle = TextBundle::from_section(
+                "0",
+                TextStyle {
+                    font_size: 20.0,
+                    color: Color::WHITE,
+                    ..Default::default()
+                },
+            )
+            .with_text_alignment(TextAlignment::Center)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                top: Val::Vh((viewport.y / window.height()) * 100.0),
+                left: Val::Vw((viewport.x / window.width()) * 100.0),
+                ..default()
+            });
+
+            commands.spawn((text_bundle, MeasuringTape));
+        }
+    }
+}
+
+fn despawn_measuring_tape(
+    mut reader: EventReader<DragEvent>,
+    tape: Query<Entity, With<MeasuringTape>>,
+    mut commands: Commands,
+) {
+    let tape = tape.single();
+    for event in reader.iter() {
+        if let DragEvent::Stop = event {
+            commands.entity(tape).despawn_recursive()
+        }
+    }
 }
 
 fn update_bounce_counter(
@@ -90,6 +135,16 @@ fn update_mouse_coordinates(
     let mut text = mouse_coordinates.single_mut();
     text.sections[0].value = format!(
         "[x: {:.0}, y: {:.0}]",
-        mouse_postition.0.x, mouse_postition.0.y
+        mouse_postition.world.x, mouse_postition.world.y
     );
+}
+
+fn update_measuring_tape_length(
+    drag: Res<Drag>,
+    mut measuring_tape: Query<&mut Text, With<MeasuringTape>>,
+) {
+    let mut text = measuring_tape.single_mut();
+    if let Some(distance) = drag.distance() {
+        text.sections[0].value = format!("{:.0}", distance);
+    }
 }

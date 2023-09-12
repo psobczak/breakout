@@ -67,3 +67,9 @@ fn spawn_bounding_box(mut commands: Commands, window: Query<&Window, With<Primar
         Name::from("Bounding box"),
     ));
 }
+
+pub fn despawn_component<C: Component>(entities: Query<Entity, With<C>>, mut commands: Commands) {
+    for entity in &entities {
+        commands.entity(entity).despawn_recursive();
+    }
+}
