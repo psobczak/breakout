@@ -6,6 +6,7 @@ use crate::{
     ball::BallPlugin,
     block::BlockPlugin,
     config::ConfigPlugin,
+    debug::DebugPlugin,
     paddle::{Dimensions, PaddlePlugin},
     ui::UiPlugin,
 };
@@ -38,6 +39,7 @@ impl Plugin for GamePlugin {
                 PaddlePlugin,
                 UiPlugin,
                 BlockPlugin,
+                DebugPlugin,
             ))
             .configure_set(OnEnter(GameState::InGame), SpawningSet::Spawn)
             .configure_set(OnExit(GameState::InGame), SpawningSet::Despawn)
