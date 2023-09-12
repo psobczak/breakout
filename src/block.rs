@@ -1,8 +1,10 @@
+use core::panic;
+
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
     ball::BallBouncedEvent,
-    config::{Config, GameConfig},
+    config::{BlockConfig, Config, GameConfig},
     game::GameState,
     paddle::Dimensions,
 };
@@ -23,44 +25,61 @@ pub fn spawn_blocks(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     assets: Res<Assets<Config>>,
-    // window: Query<&Window, With<PrimaryWindow>>,
+    window: Query<&Window, With<PrimaryWindow>>,
+    camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
 ) {
     let Some(config) = assets.get(&game_config.config) else {
         panic!("game config could not be loaded")
     };
 
-    let block_config = &config.block;
+    let window = window.single();
+    let (camera, camera_transform) = camera.single();
+
+    let total_block_width = total_horizontal_width(&window, &config.block);
+
+    let left_upper_corner = Vec2::new(total_block_width / 2.0, 0.0);
+
+    let Some(position) = camera.viewport_to_world_2d(camera_transform, left_upper_corner) else {
+        panic!("could not calculate left upper block in world coordinates")
+    };
 
     commands
         .spawn((Name::from("Blocks"), SpatialBundle::default()))
         .with_children(|builder| {
-            for i in 0..10 {
-                for j in 0..10 {
+            for i in 0..config.block.columns {
+                for j in 0..config.block.rows {
                     builder.spawn((
                         SpriteBundle {
                             transform: Transform::from_xyz(
-                                (i as f32 * block_config.width)
-                                    + (block_config.horizontal_offset * i as f32),
-                                (j as f32 * block_config.height)
-                                    + (block_config.vertical_offset * j as f32),
+                                (position.x + config.block.width / 2.0)
+                                    + (i as f32 * config.block.width)
+                                    + (config.block.horizontal_offset * i as f32),
+                                (j as f32 * config.block.height)
+                                    + (config.block.vertical_offset * j as f32),
                                 0.0,
                             ),
                             sprite: Sprite {
                                 color: Color::GREEN,
                                 custom_size: Some(Vec2::new(
-                                    block_config.width,
-                                    block_config.height,
+                                    config.block.width,
+                                    config.block.height,
                                 )),
                                 ..Default::default()
                             },
                             ..Default::default()
                         },
-                        Dimensions(Vec2::new(block_config.width, block_config.height)),
+                        Dimensions(Vec2::new(config.block.width, config.block.height)),
                         Block,
                     ));
                 }
             }
         });
+}
+
+fn total_horizontal_width(window: &Window, block_config: &BlockConfig) -> f32 {
+    window.width()
+        - ((block_config.width * block_config.columns as f32)
+            + block_config.columns as f32 * block_config.horizontal_offset)
 }
 
 fn hit_block(

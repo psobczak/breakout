@@ -120,7 +120,7 @@ fn spawn_ball(
 
 fn move_ball(mut ball: Query<(&mut Transform, &Speed), With<Ball>>, time: Res<Time>) {
     for (mut transform, speed) in &mut ball {
-        transform.translation.y += speed.0.y * time.delta_seconds();
-        transform.translation.x -= speed.0.x * time.delta_seconds();
+        // transform.translation.y += speed.0.y * time.delta_seconds();
+        // transform.translation.x -= speed.0.x * time.delta_seconds();
     }
 }
