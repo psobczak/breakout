@@ -27,20 +27,36 @@ pub fn spawn_blocks(
         panic!("game config could not be loaded")
     };
 
+    let block_config = &config.block;
+
     commands
         .spawn((Name::from("Blocks"), SpatialBundle::default()))
         .with_children(|builder| {
-            builder.spawn((
-                SpriteBundle {
-                    sprite: Sprite {
-                        color: Color::GREEN,
-                        custom_size: Some(Vec2::new(config.block.width, config.block.height)),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
-                Dimensions(Vec2::new(config.block.width, config.block.height)),
-                Block,
-            ));
+            for i in 0..10 {
+                for j in 0..10 {
+                    builder.spawn((
+                        SpriteBundle {
+                            transform: Transform::from_xyz(
+                                (i as f32 * block_config.width)
+                                    + (block_config.horizontal_offset * i as f32),
+                                (j as f32 * block_config.height)
+                                    + (block_config.vertical_offset * j as f32),
+                                0.0,
+                            ),
+                            sprite: Sprite {
+                                color: Color::GREEN,
+                                custom_size: Some(Vec2::new(
+                                    block_config.width,
+                                    block_config.height,
+                                )),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        },
+                        Dimensions(Vec2::new(block_config.width, block_config.height)),
+                        Block,
+                    ));
+                }
+            }
         });
 }

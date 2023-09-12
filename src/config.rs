@@ -55,4 +55,6 @@ pub struct PaddleConfig {
 pub struct BlockConfig {
     pub width: f32,
     pub height: f32,
+    pub horizontal_offset: f32,
+    pub vertical_offset: f32,
 }
