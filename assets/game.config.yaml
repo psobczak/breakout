@@ -21,9 +21,10 @@ paddle:
   }
   initial_speed: 200.0
 block:
-  rows: 5
+  rows: 10
   columns: 15
-  width: 50.0
-  height: 20.0
-  horizontal_offset: 20.0
-  vertical_offset: 10.0
+  width: 60.0
+  height: 15.0
+  horizontal_offset: 10.0
+  vertical_offset: 5.0
+  offset_from_top: 250.0

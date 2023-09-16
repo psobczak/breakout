@@ -60,4 +60,5 @@ pub struct BlockConfig {
     pub vertical_offset: f32,
     pub rows: u32,
     pub columns: u32,
+    pub offset_from_top: f32,
 }

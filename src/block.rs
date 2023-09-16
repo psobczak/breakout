@@ -40,14 +40,23 @@ pub fn spawn_blocks(
 
     let total_block_width = total_horizontal_width(window, &config.block);
 
-    let left_upper_corner = Vec2::new(total_block_width / 2.0, 0.0);
+    let left_upper_corner = Vec2::new(
+        total_block_width / 2.0,
+        window.height() / 2.0 - config.block.offset_from_top,
+    );
 
     let Some(position) = camera.viewport_to_world_2d(camera_transform, left_upper_corner) else {
         panic!("could not calculate left upper block in world coordinates")
     };
 
     commands
-        .spawn((Name::from("Blocks"), SpatialBundle::default()))
+        .spawn((
+            Name::from("Blocks"),
+            SpatialBundle {
+                transform: Transform::from_xyz(0.0, left_upper_corner.y, 0.0),
+                ..Default::default()
+            },
+        ))
         .with_children(|builder| {
             for i in 0..config.block.columns {
                 for j in 0..config.block.rows {
@@ -58,7 +67,7 @@ pub fn spawn_blocks(
                                     + (i as f32 * config.block.width)
                                     + (config.block.horizontal_offset * i as f32),
                                 (j as f32 * config.block.height)
-                                    + (config.block.vertical_offset * j as f32),
+                                    + (config.block.vertical_offset * (j as f32 + 1.0)),
                                 0.0,
                             ),
                             sprite: Sprite {
