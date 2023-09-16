@@ -54,7 +54,7 @@ impl Plugin for GamePlugin {
                     SpawningSet::Paddle,
                     SpawningSet::Deferred,
                     SpawningSet::Ball,
-                    SpawningSet::Blocks
+                    SpawningSet::Blocks,
                 )
                     .chain(),
             )
@@ -63,8 +63,7 @@ impl Plugin for GamePlugin {
                 OnEnter(GameState::PlayingBall),
                 apply_deferred.in_set(SpawningSet::Deferred),
             )
-            .add_systems(Startup, (spawn_camera, spawn_bounding_box))
-            .add_systems(Update, print_state);
+            .add_systems(Startup, (spawn_camera, spawn_bounding_box));
     }
 }
 
@@ -94,8 +93,4 @@ fn start_game(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>
     if input.just_pressed(KeyCode::Return) {
         state.set(GameState::PlayingBall)
     }
-}
-
-fn print_state(state: Res<State<GameState>>) {
-    info!("{:?}", state)
 }
