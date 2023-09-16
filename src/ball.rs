@@ -31,7 +31,7 @@ impl Plugin for BallPlugin {
             )
             .add_systems(
                 Update,
-                (follow_paddle).run_if(in_state(GameState::PlayingBall)),
+                (follow_paddle, play_ball).distributive_run_if(in_state(GameState::PlayingBall)),
             )
             .add_systems(
                 Update,
@@ -131,8 +131,8 @@ fn spawn_ball(
 
 fn move_ball(mut ball: Query<(&mut Transform, &Speed), With<Ball>>, time: Res<Time>) {
     for (mut transform, speed) in &mut ball {
-        // transform.translation.y += speed.0.y * time.delta_seconds();
-        // transform.translation.x -= speed.0.x * time.delta_seconds();
+        transform.translation.y += speed.0.y * time.delta_seconds();
+        transform.translation.x -= speed.0.x * time.delta_seconds();
     }
 }
 
@@ -144,4 +144,10 @@ fn follow_paddle(
     let mut ball = ball.single_mut();
 
     ball.translation.x = paddle.translation().x;
+}
+
+fn play_ball(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>>) {
+    if input.just_pressed(KeyCode::Space) {
+        state.set(GameState::InGame)
+    }
 }
