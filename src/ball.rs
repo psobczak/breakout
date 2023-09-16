@@ -7,9 +7,8 @@ use bevy::{
 };
 
 use crate::{
-    block::Block,
     config::{Config, GameConfig},
-    game::{BoundingBox, GameState, SpawningSet},
+    game::{GameState, SpawningSet},
     paddle::{Dimensions, Speed},
 };
 

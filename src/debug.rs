@@ -31,7 +31,7 @@ impl Drag {
                 return Some(start.distance(end));
             }
         }
-        return None;
+        None
     }
 }
 

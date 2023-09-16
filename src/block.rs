@@ -35,7 +35,7 @@ pub fn spawn_blocks(
     let window = window.single();
     let (camera, camera_transform) = camera.single();
 
-    let total_block_width = total_horizontal_width(&window, &config.block);
+    let total_block_width = total_horizontal_width(window, &config.block);
 
     let left_upper_corner = Vec2::new(total_block_width / 2.0, 0.0);
 
@@ -88,7 +88,7 @@ fn hit_block(
     blocks: Query<With<Block>>,
 ) {
     for event in reader.iter() {
-        if let Ok(_) = blocks.get(event.0) {
+        if blocks.get(event.0).is_ok() {
             commands.entity(event.0).despawn_recursive();
         }
     }
