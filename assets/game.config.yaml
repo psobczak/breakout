@@ -22,7 +22,7 @@ paddle:
 block:
   rows: 5
   columns: 15
-  width: 40.0
+  width: 50.0
   height: 20.0
   horizontal_offset: 20.0
   vertical_offset: 10.0

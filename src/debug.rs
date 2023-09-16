@@ -78,10 +78,14 @@ impl Plugin for DebugPlugin {
         app.insert_resource(MousePosition::default())
             .insert_resource(Drag::default())
             .add_event::<DragEvent>()
-            .add_systems(Update, (update_mouse_position,))
             .add_systems(
                 Update,
-                (send_drag_event, handle_drag, draw_measuring_tape)
+                (
+                    send_drag_event,
+                    handle_drag,
+                    draw_measuring_tape,
+                    update_mouse_position,
+                )
                     .distributive_run_if(in_state(GameState::InGame)),
             );
     }

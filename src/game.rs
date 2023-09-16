@@ -27,6 +27,9 @@ pub enum SpawningSet {
     Despawn,
 }
 
+#[derive(Component)]
+pub struct BoundingBox;
+
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
@@ -65,11 +68,6 @@ fn spawn_bounding_box(mut commands: Commands, window: Query<&Window, With<Primar
         },
         Dimensions(Vec2::new(window.width(), window.height())),
         Name::from("Bounding box"),
+        BoundingBox,
     ));
-}
-
-pub fn despawn_component<C: Component>(entities: Query<Entity, With<C>>, mut commands: Commands) {
-    for entity in &entities {
-        commands.entity(entity).despawn_recursive();
-    }
 }

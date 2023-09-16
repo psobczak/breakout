@@ -37,6 +37,9 @@ struct MouseCoordinates;
 #[derive(Component)]
 struct MeasuringTape;
 
+#[derive(Component)]
+struct BallCoordinates;
+
 fn setup(mut commands: Commands) {
     commands.spawn((
         TextBundle::from_section(
@@ -57,24 +60,35 @@ fn setup(mut commands: Commands) {
         BounceCounter,
     ));
 
-    commands.spawn((
-        TextBundle::from_section(
-            "",
-            TextStyle {
-                font_size: 20.0,
-                color: Color::WHITE,
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                width: Val::Percent(100.0),
+                justify_content: JustifyContent::Center,
                 ..Default::default()
             },
-        )
-        .with_text_alignment(TextAlignment::Center)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            bottom: Val::Px(5.0),
-            left: Val::Px(15.0),
-            ..default()
-        }),
-        MouseCoordinates,
-    ));
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn((
+                TextBundle::from_section(
+                    "",
+                    TextStyle {
+                        font_size: 20.0,
+                        color: Color::WHITE,
+                        ..Default::default()
+                    },
+                )
+                .with_text_alignment(TextAlignment::Center)
+                .with_style(Style {
+                    position_type: PositionType::Absolute,
+                    bottom: Val::Px(5.0),
+                    left: Val::Px(15.0),
+                    ..Default::default()
+                }),
+                MouseCoordinates,
+            ));
+        });
 }
 
 fn spawn_measuring_tape(
