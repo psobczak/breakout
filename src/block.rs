@@ -5,7 +5,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use crate::{
     ball::BallBouncedEvent,
     config::{BlockConfig, Config, GameConfig},
-    game::GameState,
+    game::{GameState, SpawningSet},
     paddle::Dimensions,
 };
 
@@ -13,8 +13,11 @@ pub struct BlockPlugin;
 
 impl Plugin for BlockPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::InGame), (spawn_blocks,))
-            .add_systems(Update, (hit_block,).run_if(in_state(GameState::InGame)));
+        app.add_systems(
+            OnEnter(GameState::PlayingBall),
+            spawn_blocks.in_set(SpawningSet::Blocks),
+        )
+        .add_systems(Update, (hit_block,).run_if(in_state(GameState::InGame)));
     }
 }
 

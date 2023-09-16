@@ -20,7 +20,7 @@ impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_plugins(YamlAssetPlugin::<Config>::new(&["config.yaml"]))
             .add_loading_state(
-                LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::InGame),
+                LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Menu),
             )
             .add_collection_to_loading_state::<_, GameConfig>(GameState::AssetLoading);
     }
@@ -40,6 +40,7 @@ pub struct BallConfig {
     pub color: Color,
     pub initial_speed: f32,
     pub speed_increase: f32,
+    pub offset_from_paddle: f32,
 }
 
 #[derive(serde::Deserialize, Debug)]

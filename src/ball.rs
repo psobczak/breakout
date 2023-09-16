@@ -9,7 +9,7 @@ use bevy::{
 use crate::{
     config::{Config, GameConfig},
     game::{GameState, SpawningSet},
-    paddle::{Dimensions, Speed},
+    paddle::{Dimensions, Paddle, Speed},
 };
 
 #[derive(Component)]
@@ -26,8 +26,12 @@ impl Plugin for BallPlugin {
         app.add_event::<BallBouncedEvent>()
             .insert_resource(Bounces::default())
             .add_systems(
-                OnEnter(GameState::InGame),
-                spawn_ball.in_set(SpawningSet::Spawn),
+                OnEnter(GameState::PlayingBall),
+                spawn_ball.in_set(SpawningSet::Ball),
+            )
+            .add_systems(
+                Update,
+                (follow_paddle).run_if(in_state(GameState::PlayingBall)),
             )
             .add_systems(
                 Update,
@@ -94,6 +98,7 @@ fn spawn_ball(
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    paddle: Query<&Transform, With<Paddle>>,
     game_config: Res<GameConfig>,
     assets: Res<Assets<Config>>,
 ) {
@@ -101,14 +106,20 @@ fn spawn_ball(
         panic!("game config could not be loaded")
     };
 
+    let paddle_transform = paddle.single();
+
     commands.spawn((
         MaterialMesh2dBundle {
             mesh: meshes
                 .add(shape::Circle::new(config.ball.radius).into())
                 .into(),
             material: materials.add(ColorMaterial::from(config.ball.color)),
-            transform: Transform::from_xyz(0.0, -100.0, 0.0),
-            ..default()
+            transform: Transform::from_xyz(
+                paddle_transform.translation.x,
+                paddle_transform.translation.y + config.ball.offset_from_paddle,
+                0.0,
+            ),
+            ..Default::default()
         },
         Ball {
             radius: config.ball.radius,
@@ -120,7 +131,17 @@ fn spawn_ball(
 
 fn move_ball(mut ball: Query<(&mut Transform, &Speed), With<Ball>>, time: Res<Time>) {
     for (mut transform, speed) in &mut ball {
-        transform.translation.y += speed.0.y * time.delta_seconds();
-        transform.translation.x -= speed.0.x * time.delta_seconds();
+        // transform.translation.y += speed.0.y * time.delta_seconds();
+        // transform.translation.x -= speed.0.x * time.delta_seconds();
     }
+}
+
+fn follow_paddle(
+    paddle: Query<&GlobalTransform, With<Paddle>>,
+    mut ball: Query<&mut Transform, With<Ball>>,
+) {
+    let paddle = paddle.single();
+    let mut ball = ball.single_mut();
+
+    ball.translation.x = paddle.translation().x;
 }

@@ -21,13 +21,14 @@ impl Plugin for PaddlePlugin {
         app.register_type::<Speed>()
             .register_type::<Dimensions>()
             .add_systems(
-                OnEnter(GameState::InGame),
-                spawn_paddle.in_set(SpawningSet::Spawn),
+                OnEnter(GameState::PlayingBall),
+                spawn_paddle.in_set(SpawningSet::Paddle),
             )
             .add_systems(
                 Update,
-                (move_paddle).distributive_run_if(in_state(GameState::InGame)),
-            );
+                (move_paddle).run_if(in_state(GameState::PlayingBall)),
+            )
+            .add_systems(Update, (move_paddle).run_if(in_state(GameState::InGame)));
     }
 }
 
@@ -60,6 +61,7 @@ fn spawn_paddle(
             ),
             ..Default::default()
         },
+        Name::from("Paddle"),
     ));
 }
 

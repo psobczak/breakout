@@ -18,13 +18,17 @@ pub enum GameState {
     #[default]
     AssetLoading,
     Menu,
+    PlayingBall,
     InGame,
+    GameOver,
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum SpawningSet {
-    Spawn,
-    Despawn,
+    Paddle,
+    Deferred,
+    Ball,
+    Blocks,
 }
 
 #[derive(Component)]
@@ -44,9 +48,23 @@ impl Plugin for GamePlugin {
                 BlockPlugin,
                 DebugPlugin,
             ))
-            .configure_set(OnEnter(GameState::InGame), SpawningSet::Spawn)
-            .configure_set(OnExit(GameState::InGame), SpawningSet::Despawn)
-            .add_systems(Startup, (spawn_camera, spawn_bounding_box));
+            .configure_sets(
+                OnEnter(GameState::PlayingBall),
+                (
+                    SpawningSet::Paddle,
+                    SpawningSet::Deferred,
+                    SpawningSet::Ball,
+                    SpawningSet::Blocks
+                )
+                    .chain(),
+            )
+            .add_systems(Update, start_game.run_if(in_state(GameState::Menu)))
+            .add_systems(
+                OnEnter(GameState::PlayingBall),
+                apply_deferred.in_set(SpawningSet::Deferred),
+            )
+            .add_systems(Startup, (spawn_camera, spawn_bounding_box))
+            .add_systems(Update, print_state);
     }
 }
 
@@ -70,4 +88,14 @@ fn spawn_bounding_box(mut commands: Commands, window: Query<&Window, With<Primar
         Name::from("Bounding box"),
         BoundingBox,
     ));
+}
+
+fn start_game(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>>) {
+    if input.just_pressed(KeyCode::Return) {
+        state.set(GameState::PlayingBall)
+    }
+}
+
+fn print_state(state: Res<State<GameState>>) {
+    info!("{:?}", state)
 }
