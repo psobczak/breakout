@@ -1,5 +1,5 @@
 ball:
-  radius: 10.0
+  radius: 5.0
   color: !Hsla {
     hue: 179,
     saturation: 0.82,

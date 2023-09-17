@@ -3,7 +3,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use crate::{
     ball::Bounces,
     debug::{Drag, DragEvent, MousePosition},
-    game::GameState,
+    game::{despawn_with_component, GameState},
 };
 
 pub struct UiPlugin;
@@ -11,6 +11,8 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (setup,))
+            .add_systems(OnEnter(GameState::Menu), spawn_menu)
+            .add_systems(OnExit(GameState::Menu), despawn_with_component::<Menu>)
             .add_systems(
                 Update,
                 (update_bounce_counter.run_if(resource_changed::<Bounces>()),)
@@ -39,6 +41,35 @@ struct MeasuringTape;
 
 #[derive(Component)]
 struct BallCoordinates;
+
+#[derive(Component)]
+struct Menu;
+
+fn spawn_menu(mut commands: Commands) {
+    commands
+        .spawn((
+            Menu,
+            NodeBundle {
+                style: Style {
+                    align_items: AlignItems::Center,
+                    ..Default::default()
+                },
+                background_color: Color::RED.into(),
+                ..Default::default()
+            },
+        ))
+        .with_children(|parent| {
+            parent.spawn(ButtonBundle {
+                style: Style {
+                    width: Val::Px(100.0),
+                    height: Val::Px(50.0),
+                    ..Default::default()
+                },
+                background_color: Color::GOLD.into(),
+                ..Default::default()
+            });
+        });
+}
 
 fn setup(mut commands: Commands) {
     commands.spawn((

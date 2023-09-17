@@ -94,3 +94,9 @@ fn start_game(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>
         state.set(GameState::PlayingBall)
     }
 }
+
+pub fn despawn_with_component<C: Component>(mut commands: Commands, query: Query<Entity, With<C>>) {
+    for entity in &query {
+        commands.entity(entity).despawn_recursive()
+    }
+}
