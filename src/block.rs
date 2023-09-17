@@ -38,11 +38,12 @@ pub fn spawn_blocks(
     let window = window.single();
     let (camera, camera_transform) = camera.single();
 
-    let total_block_width = total_horizontal_width(window, &config.block);
+    let total_block_width = total_blocks_width(window, &config.block);
 
     let left_upper_corner = Vec2::new(
         total_block_width / 2.0,
-        window.height() / 2.0 - config.block.offset_from_top,
+        (window.height() / 2.0 - config.block.offset_from_top)
+            - total_blocks_height(window, &config.block) / 2.0,
     );
 
     let Some(position) = camera.viewport_to_world_2d(camera_transform, left_upper_corner) else {
@@ -58,16 +59,18 @@ pub fn spawn_blocks(
             },
         ))
         .with_children(|builder| {
-            for i in 0..config.block.columns {
-                for j in 0..config.block.rows {
+            for i in 1..config.block.columns {
+                for j in 1..config.block.rows {
                     builder.spawn((
                         SpriteBundle {
                             transform: Transform::from_xyz(
                                 (position.x + config.block.width / 2.0)
                                     + (i as f32 * config.block.width)
                                     + (config.block.horizontal_offset * i as f32),
-                                (j as f32 * config.block.height)
-                                    + (config.block.vertical_offset * (j as f32 + 1.0)),
+                                (position.y + config.block.height)
+                                    - ((j as f32 * config.block.height)
+                                        + (config.block.vertical_offset * (j as f32 + 1.0)))
+                                    - config.block.offset_from_top,
                                 0.0,
                             ),
                             sprite: Sprite {
@@ -88,10 +91,16 @@ pub fn spawn_blocks(
         });
 }
 
-fn total_horizontal_width(window: &Window, block_config: &BlockConfig) -> f32 {
+fn total_blocks_width(window: &Window, block_config: &BlockConfig) -> f32 {
     window.width()
-        - ((block_config.width * block_config.columns as f32)
+        - ((block_config.width * block_config.columns as f32 + 1.0)
             + block_config.columns as f32 * block_config.horizontal_offset)
+}
+
+fn total_blocks_height(window: &Window, block_config: &BlockConfig) -> f32 {
+    window.height()
+        - ((block_config.height * block_config.rows as f32 + 1.0)
+            + (block_config.vertical_offset * block_config.rows as f32))
 }
 
 fn hit_block(
