@@ -12,7 +12,7 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (setup,))
-            .add_systems(OnEnter(GameState::Menu), (spawn_menu))
+            .add_systems(OnEnter(GameState::Menu), spawn_menu)
             .add_systems(OnExit(GameState::Menu), despawn_with_component::<Menu>)
             .add_systems(
                 Update,

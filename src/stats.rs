@@ -1,8 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::collide_aabb::Collision};
 
 use crate::{
+    ball::BallCollisionEvent,
     config::{Config, GameConfig},
-    game::GameState,
+    game::{BoundingBox, GameState},
 };
 
 #[derive(Resource)]
@@ -12,7 +13,12 @@ pub struct StatsPlugin;
 
 impl Plugin for StatsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::PlayingBall), prepare_lifes);
+        app.add_systems(OnEnter(GameState::PlayingBall), prepare_lifes)
+            .add_systems(
+                Update,
+                (decrease_lifes_counter, game_over)
+                    .distributive_run_if(in_state(GameState::InGame)),
+            );
     }
 }
 
@@ -26,4 +32,22 @@ fn prepare_lifes(
     };
 
     commands.insert_resource(Lives(config.stats.lifes));
+}
+
+fn decrease_lifes_counter(
+    mut lifes: ResMut<Lives>,
+    mut reader: EventReader<BallCollisionEvent>,
+    bounding_box: Query<With<BoundingBox>>,
+) {
+    for event in reader.iter() {
+        if bounding_box.get(event.with).is_ok() && event.collision == Collision::Bottom {
+            lifes.0 -= 1;
+        }
+    }
+}
+
+fn game_over(mut state: ResMut<NextState<GameState>>, lifes: Res<Lives>) {
+    if lifes.0 == 0 {
+        state.set(GameState::GameOver)
+    }
 }
