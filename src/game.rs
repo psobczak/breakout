@@ -73,7 +73,6 @@ impl Plugin for GamePlugin {
                 apply_deferred.in_set(SpawningSet::Deferred),
             )
             .add_systems(Startup, (spawn_camera, spawn_bounding_box));
-            // .add_systems(OnExit(PlayState::BallInGame), systems);
     }
 }
 

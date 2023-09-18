@@ -7,13 +7,15 @@ use crate::{
     stats::Lives,
 };
 
+const MENU_BUTTONS: [MenuButton; 3] = [MenuButton::Play, MenuButton::Leaderboard, MenuButton::Quit];
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (setup,))
-            .add_systems(OnEnter(AppState::Menu), spawn_menu)
+        app.add_systems(OnEnter(AppState::Menu), spawn_menu)
             .add_systems(OnExit(AppState::Menu), despawn_with_component::<Menu>)
+            .add_systems(OnEnter(AppState::Playing), spawn_debug_ui)
             .add_systems(
                 Update,
                 (update_bounce_counter.run_if(resource_changed::<Bounces>()),)
@@ -27,8 +29,53 @@ impl Plugin for UiPlugin {
                     update_mouse_coordinates.run_if(resource_changed::<MousePosition>()),
                     (update_measuring_tape_length, despawn_measuring_tape)
                         .distributive_run_if(any_with_component::<MeasuringTape>()),
-                ),
+                )
+                    .distributive_run_if(in_state(AppState::Playing)),
             );
+    }
+}
+
+#[derive(Component)]
+enum MenuButton {
+    Play,
+    Leaderboard,
+    Quit,
+}
+
+impl MenuButton {
+    fn get_button_text(&self) -> &str {
+        match self {
+            MenuButton::Play => "Play",
+            MenuButton::Leaderboard => "Leaderboard",
+            MenuButton::Quit => "Quit",
+        }
+    }
+
+    fn spawn_nexted_text_bundle(
+        &self,
+        builder: &mut ChildBuilder,
+        font_size: f32,
+        background_color: impl Into<BackgroundColor>,
+    ) {
+        builder
+            .spawn(NodeBundle {
+                style: Style {
+                    padding: UiRect::axes(Val::Px(5.0), Val::Px(1.0)),
+                    ..Default::default()
+                },
+                background_color: background_color.into(),
+                ..Default::default()
+            })
+            .with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    self.get_button_text(),
+                    TextStyle {
+                        font_size,
+                        color: Color::WHITE.into(),
+                        ..Default::default()
+                    },
+                ));
+            });
     }
 }
 
@@ -56,27 +103,35 @@ fn spawn_menu(mut commands: Commands) {
             Menu,
             NodeBundle {
                 style: Style {
+                    width: Val::Percent(100.),
+                    height: Val::Percent(100.),
+                    flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
                     ..Default::default()
                 },
-                background_color: Color::RED.into(),
+                background_color: Color::AQUAMARINE.into(),
                 ..Default::default()
             },
         ))
         .with_children(|parent| {
-            parent.spawn(ButtonBundle {
-                style: Style {
-                    width: Val::Px(100.0),
-                    height: Val::Px(50.0),
-                    ..Default::default()
-                },
-                background_color: Color::GOLD.into(),
-                ..Default::default()
-            });
+            for button in MENU_BUTTONS {
+                parent
+                    .spawn(NodeBundle {
+                        style: Style {
+                            flex_direction: FlexDirection::Row,
+                            margin: UiRect::top(Val::Px(10.0)),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .with_children(|parent| {
+                        button.spawn_nexted_text_bundle(parent, 40.0, Color::YELLOW_GREEN);
+                    });
+            }
         });
 }
 
-fn setup(mut commands: Commands) {
+fn spawn_debug_ui(mut commands: Commands) {
     commands.spawn((
         TextBundle::from_section(
             "",
