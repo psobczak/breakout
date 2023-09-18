@@ -3,7 +3,7 @@ use core::panic;
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
-    ball::BallBouncedEvent,
+    ball::BallCollisionEvent,
     config::{BlockConfig, Config, GameConfig},
     game::{GameState, SpawningSet},
     paddle::Dimensions,
@@ -105,12 +105,12 @@ fn total_blocks_height(window: &Window, block_config: &BlockConfig) -> f32 {
 
 fn hit_block(
     mut commands: Commands,
-    mut reader: EventReader<BallBouncedEvent>,
+    mut reader: EventReader<BallCollisionEvent>,
     blocks: Query<With<Block>>,
 ) {
     for event in reader.iter() {
-        if blocks.get(event.0).is_ok() {
-            commands.entity(event.0).despawn_recursive();
+        if blocks.get(event.with).is_ok() {
+            commands.entity(event.with).despawn_recursive();
         }
     }
 }

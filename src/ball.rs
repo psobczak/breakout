@@ -19,11 +19,19 @@ pub struct Ball {
 
 #[derive(Resource, Debug, Default)]
 pub struct Bounces(pub u32);
+
+#[derive(Event, Debug)]
+pub struct BallCollisionEvent {
+    pub ball: Entity,
+    pub with: Entity,
+    pub collision: Collision,
+}
+
 pub struct BallPlugin;
 
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<BallBouncedEvent>()
+        app.add_event::<BallCollisionEvent>()
             .insert_resource(Bounces::default())
             .add_systems(
                 OnEnter(GameState::PlayingBall),
@@ -36,16 +44,13 @@ impl Plugin for BallPlugin {
             .add_systems(
                 Update,
                 (
-                    (bounce_ball, move_ball).chain(),
+                    (detect_collision, change_ball_direction, move_ball).chain(),
                     increase_ball_speed.run_if(resource_changed::<Bounces>()),
                 )
                     .distributive_run_if(in_state(GameState::InGame)),
             );
     }
 }
-
-#[derive(Event)]
-pub struct BallBouncedEvent(pub Entity);
 
 fn increase_ball_speed(
     mut balls: Query<&mut Speed, With<Ball>>,
@@ -62,14 +67,35 @@ fn increase_ball_speed(
     }
 }
 
-fn bounce_ball(
-    mut balls: Query<(&mut Speed, &Ball, &GlobalTransform), With<Ball>>,
-    bouncable: Query<(&GlobalTransform, &Dimensions, Entity)>,
+fn change_ball_direction(
+    mut balls: Query<&mut Speed, With<Ball>>,
+    mut reader: EventReader<BallCollisionEvent>,
     mut bounces: ResMut<Bounces>,
-    mut writer: EventWriter<BallBouncedEvent>,
 ) {
-    for (paddle_transform, dimensions, entity) in &bouncable {
-        for (mut speed, ball, ball_transform) in &mut balls {
+    for event in reader.iter() {
+        if let Ok(mut speed) = balls.get_mut(event.ball) {
+            match event.collision {
+                Collision::Left | Collision::Right => {
+                    speed.0.x *= -1.0;
+                    bounces.0 += 1;
+                }
+                Collision::Top | Collision::Bottom => {
+                    speed.0.y *= -1.0;
+                    bounces.0 += 1;
+                }
+                Collision::Inside => {}
+            }
+        }
+    }
+}
+
+fn detect_collision(
+    balls: Query<(&Ball, &GlobalTransform, Entity), With<Ball>>,
+    bouncable: Query<(&GlobalTransform, &Dimensions, Entity)>,
+    mut writer: EventWriter<BallCollisionEvent>,
+) {
+    for (paddle_transform, dimensions, bouncable_entity) in &bouncable {
+        for (ball, ball_transform, ball_entity) in &balls {
             if let Some(collision) = collide(
                 ball_transform.translation(),
                 Vec2::splat(ball.radius),
@@ -77,18 +103,28 @@ fn bounce_ball(
                 dimensions.0,
             ) {
                 match collision {
-                    Collision::Left | Collision::Right => {
-                        speed.0.x *= -1.0;
-                        bounces.0 += 1;
-                        writer.send(BallBouncedEvent(entity));
-                    }
-                    Collision::Top | Collision::Bottom => {
-                        speed.0.y *= -1.0;
-                        bounces.0 += 1;
-                        writer.send(BallBouncedEvent(entity));
-                    }
+                    Collision::Left => writer.send(BallCollisionEvent {
+                        ball: ball_entity,
+                        with: bouncable_entity,
+                        collision: Collision::Left,
+                    }),
+                    Collision::Right => writer.send(BallCollisionEvent {
+                        ball: ball_entity,
+                        with: bouncable_entity,
+                        collision: Collision::Right,
+                    }),
+                    Collision::Top => writer.send(BallCollisionEvent {
+                        ball: ball_entity,
+                        with: bouncable_entity,
+                        collision: Collision::Top,
+                    }),
+                    Collision::Bottom => writer.send(BallCollisionEvent {
+                        ball: ball_entity,
+                        with: bouncable_entity,
+                        collision: Collision::Bottom,
+                    }),
                     Collision::Inside => {}
-                };
+                }
             }
         }
     }
