@@ -5,5 +5,6 @@ mod debug;
 mod game;
 mod paddle;
 mod ui;
+mod stats;
 
 pub use game::GamePlugin;

@@ -28,3 +28,5 @@ block:
   horizontal_offset: 10.0
   vertical_offset: 5.0
   offset_from_top: 120.0
+stats:
+  lifes: 3

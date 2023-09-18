@@ -32,6 +32,7 @@ pub struct Config {
     pub ball: BallConfig,
     pub paddle: PaddleConfig,
     pub block: BlockConfig,
+    pub stats: StatsConfig,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -61,4 +62,9 @@ pub struct BlockConfig {
     pub rows: u32,
     pub columns: u32,
     pub offset_from_top: f32,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct StatsConfig {
+    pub lifes: u32,
 }

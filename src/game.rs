@@ -8,6 +8,7 @@ use crate::{
     config::ConfigPlugin,
     debug::DebugPlugin,
     paddle::{Dimensions, PaddlePlugin},
+    stats::StatsPlugin,
     ui::UiPlugin,
 };
 
@@ -47,6 +48,7 @@ impl Plugin for GamePlugin {
                 UiPlugin,
                 BlockPlugin,
                 DebugPlugin,
+                StatsPlugin,
             ))
             .configure_sets(
                 OnEnter(GameState::PlayingBall),

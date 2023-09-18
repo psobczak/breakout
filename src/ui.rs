@@ -4,6 +4,7 @@ use crate::{
     ball::Bounces,
     debug::{Drag, DragEvent, MousePosition},
     game::{despawn_with_component, GameState},
+    stats::Lives,
 };
 
 pub struct UiPlugin;
@@ -11,7 +12,7 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (setup,))
-            .add_systems(OnEnter(GameState::Menu), spawn_menu)
+            .add_systems(OnEnter(GameState::Menu), (spawn_menu))
             .add_systems(OnExit(GameState::Menu), despawn_with_component::<Menu>)
             .add_systems(
                 Update,
@@ -22,6 +23,7 @@ impl Plugin for UiPlugin {
                 Update,
                 (
                     spawn_measuring_tape,
+                    update_lifes_counter.run_if(resource_exists_and_changed::<Lives>()),
                     update_mouse_coordinates.run_if(resource_changed::<MousePosition>()),
                     (update_measuring_tape_length, despawn_measuring_tape)
                         .distributive_run_if(any_with_component::<MeasuringTape>()),
@@ -41,6 +43,9 @@ struct MeasuringTape;
 
 #[derive(Component)]
 struct BallCoordinates;
+
+#[derive(Component)]
+struct LifesCounter;
 
 #[derive(Component)]
 struct Menu;
@@ -89,6 +94,25 @@ fn setup(mut commands: Commands) {
             ..default()
         }),
         BounceCounter,
+    ));
+
+    commands.spawn((
+        TextBundle::from_section(
+            "",
+            TextStyle {
+                font_size: 20.0,
+                color: Color::WHITE,
+                ..Default::default()
+            },
+        )
+        .with_text_alignment(TextAlignment::Center)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(5.0),
+            left: Val::Px(15.0),
+            ..default()
+        }),
+        LifesCounter,
     ));
 
     commands
@@ -192,4 +216,12 @@ fn update_measuring_tape_length(
     if let Some(distance) = drag.distance() {
         text.sections[0].value = format!("{:.0}", distance);
     }
+}
+
+fn update_lifes_counter(
+    lifes: Res<Lives>,
+    mut lifes_counter: Query<&mut Text, With<LifesCounter>>,
+) {
+    let mut text = lifes_counter.single_mut();
+    text.sections[0].value = format!("Lifes left: {}", lifes.0);
 }
