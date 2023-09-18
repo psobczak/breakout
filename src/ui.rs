@@ -3,7 +3,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use crate::{
     ball::Bounces,
     debug::{Drag, DragEvent, MousePosition},
-    game::{despawn_with_component, GameState},
+    game::{despawn_with_component, AppState},
     stats::Lives,
 };
 
@@ -12,12 +12,12 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (setup,))
-            .add_systems(OnEnter(GameState::Menu), spawn_menu)
-            .add_systems(OnExit(GameState::Menu), despawn_with_component::<Menu>)
+            .add_systems(OnEnter(AppState::Menu), spawn_menu)
+            .add_systems(OnExit(AppState::Menu), despawn_with_component::<Menu>)
             .add_systems(
                 Update,
                 (update_bounce_counter.run_if(resource_changed::<Bounces>()),)
-                    .distributive_run_if(in_state(GameState::InGame)),
+                    .distributive_run_if(in_state(AppState::Playing)),
             )
             .add_systems(
                 Update,

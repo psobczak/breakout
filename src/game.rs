@@ -15,13 +15,19 @@ use crate::{
 pub struct GamePlugin;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
-pub enum GameState {
+pub enum AppState {
     #[default]
     AssetLoading,
     Menu,
-    PlayingBall,
-    InGame,
+    Playing,
     GameOver,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
+pub enum PlayState {
+    #[default]
+    ReadyToShoot,
+    BallInGame,
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
@@ -37,7 +43,8 @@ pub struct BoundingBox;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<GameState>()
+        app.add_state::<AppState>()
+            .add_state::<PlayState>()
             .add_plugins((
                 DefaultPlugins,
                 WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Slash)),
@@ -51,7 +58,7 @@ impl Plugin for GamePlugin {
                 StatsPlugin,
             ))
             .configure_sets(
-                OnEnter(GameState::PlayingBall),
+                OnEnter(AppState::Playing),
                 (
                     SpawningSet::Paddle,
                     SpawningSet::Deferred,
@@ -60,12 +67,13 @@ impl Plugin for GamePlugin {
                 )
                     .chain(),
             )
-            .add_systems(Update, start_game.run_if(in_state(GameState::Menu)))
+            .add_systems(Update, start_game.run_if(in_state(AppState::Menu)))
             .add_systems(
-                OnEnter(GameState::PlayingBall),
+                OnEnter(AppState::Playing),
                 apply_deferred.in_set(SpawningSet::Deferred),
             )
             .add_systems(Startup, (spawn_camera, spawn_bounding_box));
+            // .add_systems(OnExit(PlayState::BallInGame), systems);
     }
 }
 
@@ -91,9 +99,9 @@ fn spawn_bounding_box(mut commands: Commands, window: Query<&Window, With<Primar
     ));
 }
 
-fn start_game(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>>) {
+fn start_game(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<AppState>>) {
     if input.just_pressed(KeyCode::Return) {
-        state.set(GameState::PlayingBall)
+        state.set(AppState::Playing)
     }
 }
 

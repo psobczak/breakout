@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_debug_lines::DebugLines;
 
-use crate::game::GameState;
+use crate::game::AppState;
 
 pub struct DebugPlugin;
 
@@ -86,7 +86,7 @@ impl Plugin for DebugPlugin {
                     draw_measuring_tape,
                     update_mouse_position,
                 )
-                    .distributive_run_if(in_state(GameState::InGame)),
+                    .distributive_run_if(in_state(AppState::Playing)),
             );
     }
 }

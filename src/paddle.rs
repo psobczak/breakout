@@ -2,7 +2,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
     config::{Config, GameConfig},
-    game::{GameState, SpawningSet},
+    game::{AppState, SpawningSet},
 };
 
 #[derive(Component, Deref, DerefMut, Debug, Reflect)]
@@ -21,14 +21,10 @@ impl Plugin for PaddlePlugin {
         app.register_type::<Speed>()
             .register_type::<Dimensions>()
             .add_systems(
-                OnEnter(GameState::PlayingBall),
+                OnEnter(AppState::Playing),
                 spawn_paddle.in_set(SpawningSet::Paddle),
             )
-            .add_systems(
-                Update,
-                (move_paddle).run_if(in_state(GameState::PlayingBall)),
-            )
-            .add_systems(Update, (move_paddle).run_if(in_state(GameState::InGame)));
+            .add_systems(Update, (move_paddle).run_if(in_state(AppState::Playing)));
     }
 }
 

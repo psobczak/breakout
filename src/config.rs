@@ -5,7 +5,7 @@ use bevy::{
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
-use crate::game::GameState;
+use crate::game::AppState;
 
 pub struct ConfigPlugin;
 
@@ -20,9 +20,9 @@ impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_plugins(YamlAssetPlugin::<Config>::new(&["config.yaml"]))
             .add_loading_state(
-                LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Menu),
+                LoadingState::new(AppState::AssetLoading).continue_to_state(AppState::Menu),
             )
-            .add_collection_to_loading_state::<_, GameConfig>(GameState::AssetLoading);
+            .add_collection_to_loading_state::<_, GameConfig>(AppState::AssetLoading);
     }
 }
 

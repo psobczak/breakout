@@ -8,7 +8,7 @@ use bevy::{
 
 use crate::{
     config::{Config, GameConfig},
-    game::{GameState, SpawningSet},
+    game::{AppState, BoundingBox, PlayState, SpawningSet},
     paddle::{Dimensions, Paddle, Speed},
 };
 
@@ -34,21 +34,27 @@ impl Plugin for BallPlugin {
         app.add_event::<BallCollisionEvent>()
             .insert_resource(Bounces::default())
             .add_systems(
-                OnEnter(GameState::PlayingBall),
+                OnEnter(AppState::Playing),
                 spawn_ball.in_set(SpawningSet::Ball),
             )
             .add_systems(
                 Update,
-                (follow_paddle, play_ball).distributive_run_if(in_state(GameState::PlayingBall)),
+                (follow_paddle, play_ball).distributive_run_if(
+                    in_state(AppState::Playing).and_then(in_state(PlayState::ReadyToShoot)),
+                ),
             )
             .add_systems(
                 Update,
                 (
                     (detect_collision, change_ball_direction, move_ball).chain(),
                     increase_ball_speed.run_if(resource_changed::<Bounces>()),
+                    ball_touched_bottom,
                 )
-                    .distributive_run_if(in_state(GameState::InGame)),
-            );
+                    .distributive_run_if(
+                        in_state(AppState::Playing).and_then(in_state(PlayState::BallInGame)),
+                    ),
+            )
+            .add_systems(OnExit(PlayState::BallInGame), follow_paddle);
     }
 }
 
@@ -173,17 +179,36 @@ fn move_ball(mut ball: Query<(&mut Transform, &Speed), With<Ball>>, time: Res<Ti
 }
 
 fn follow_paddle(
+    game_config: Res<GameConfig>,
+    assets: Res<Assets<Config>>,
     paddle: Query<&GlobalTransform, With<Paddle>>,
     mut ball: Query<&mut Transform, With<Ball>>,
 ) {
+    let Some(config) = assets.get(&game_config.config) else {
+        panic!("game config could not be loaded")
+    };
+
     let paddle = paddle.single();
     let mut ball = ball.single_mut();
 
     ball.translation.x = paddle.translation().x;
+    ball.translation.y = paddle.translation().y + config.ball.offset_from_paddle;
 }
 
-fn play_ball(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>>) {
+fn play_ball(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<PlayState>>) {
     if input.just_pressed(KeyCode::Space) {
-        state.set(GameState::InGame)
+        state.set(PlayState::BallInGame)
+    }
+}
+
+fn ball_touched_bottom(
+    mut reader: EventReader<BallCollisionEvent>,
+    bounding_box: Query<With<BoundingBox>>,
+    mut state: ResMut<NextState<PlayState>>,
+) {
+    for event in reader.iter() {
+        if bounding_box.get(event.with).is_ok() && event.collision == Collision::Bottom {
+            state.set(PlayState::ReadyToShoot)
+        }
     }
 }
