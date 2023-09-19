@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Component)]
 pub struct Ball {
-    radius: f32,
+    pub radius: f32,
 }
 
 #[derive(Resource, Debug, Default)]

@@ -47,3 +47,68 @@ fn game_over(mut state: ResMut<NextState<AppState>>, lifes: Res<Lives>) {
         state.set(AppState::GameOver)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::ball::Ball;
+
+    use super::*;
+
+    #[test]
+    fn should_decrease_lifes_counter_on_bounding_box_bottom_collision() {
+        let mut app = App::new();
+        app.insert_resource(Lives(3));
+        app.add_event::<BallCollisionEvent>();
+
+        app.add_systems(Update, decrease_lifes_counter);
+
+        let bounding_box = app.world.spawn(BoundingBox).id();
+        let ball = app.world.spawn(Ball { radius: 10.0 }).id();
+
+        app.world
+            .resource_mut::<Events<BallCollisionEvent>>()
+            .send(BallCollisionEvent {
+                ball,
+                with: bounding_box,
+                collision: Collision::Bottom,
+            });
+
+        app.update();
+
+        assert_eq!(app.world.resource::<Lives>().0, 2);
+    }
+
+    #[test]
+    fn should_set_state_to_game_over_on_0_lifes() {
+        let mut app = App::new();
+        app.insert_resource(Lives(1));
+        app.add_state::<AppState>();
+        app.add_event::<BallCollisionEvent>();
+
+        let bounding_box = app.world.spawn(BoundingBox).id();
+        let ball = app.world.spawn(Ball { radius: 10.0 }).id();
+
+        app.add_systems(
+            Update,
+            (
+                decrease_lifes_counter,
+                game_over,
+                apply_state_transition::<AppState>,
+            )
+                .chain(),
+        );
+
+        app.world
+            .resource_mut::<Events<BallCollisionEvent>>()
+            .send(BallCollisionEvent {
+                ball,
+                with: bounding_box,
+                collision: Collision::Bottom,
+            });
+
+        app.update();
+
+        let state = app.world.resource::<State<AppState>>().get();
+        assert_eq!(*state, AppState::GameOver);
+    }
+}
