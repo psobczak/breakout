@@ -8,6 +8,7 @@ use bevy::{
 
 use crate::{
     config::{Config, GameConfig},
+    debug::MousePosition,
     game::{AppState, BoundingBox, PlayState, SpawningSet},
     paddle::{Dimensions, Paddle, Speed},
 };
@@ -39,7 +40,7 @@ impl Plugin for BallPlugin {
             )
             .add_systems(
                 Update,
-                (follow_paddle, play_ball).distributive_run_if(
+                (follow_paddle, play_ball, calculate_ball_direction).distributive_run_if(
                     in_state(AppState::Playing).and_then(in_state(PlayState::ReadyToShoot)),
                 ),
             )
@@ -49,6 +50,8 @@ impl Plugin for BallPlugin {
                     (detect_collision, change_ball_direction, move_ball).chain(),
                     increase_ball_speed.run_if(resource_changed::<Bounces>()),
                     ball_touched_bottom,
+                    follow_paddle,
+                    reset_speed_on_new_life,
                 )
                     .distributive_run_if(
                         in_state(AppState::Playing).and_then(in_state(PlayState::BallInGame)),
@@ -190,8 +193,8 @@ fn spawn_ball(
 
 fn move_ball(mut ball: Query<(&mut Transform, &Speed), With<Ball>>, time: Res<Time>) {
     for (mut transform, speed) in &mut ball {
-        transform.translation.y += speed.0.y * time.delta_seconds();
-        transform.translation.x -= speed.0.x * time.delta_seconds();
+        transform.translation.y += speed.0.y * time.delta_seconds() * 150.0;
+        transform.translation.x -= speed.0.x * time.delta_seconds() * 150.0;
     }
 }
 
@@ -228,6 +231,21 @@ fn ball_touched_bottom(
             state.set(PlayState::ReadyToShoot)
         }
     }
+}
+
+fn calculate_ball_direction(
+    paddle: Query<&GlobalTransform, With<Paddle>>,
+    mouse_position: Res<MousePosition>,
+    mut ball: Query<&mut Speed, With<Ball>>,
+) {
+    let paddle = paddle.single();
+    let paddle_translation = paddle.translation();
+    let mut ball = ball.single_mut();
+
+    let mut to_cursor = (mouse_position.world - paddle_translation.truncate()).normalize();
+    to_cursor.x *= -1.0;
+
+    ball.0 = to_cursor;
 }
 
 #[cfg(test)]

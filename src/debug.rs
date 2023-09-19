@@ -1,7 +1,10 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_debug_lines::DebugLines;
 
-use crate::game::AppState;
+use crate::{
+    ball::Ball,
+    game::{AppState, PlayState},
+};
 
 pub struct DebugPlugin;
 
@@ -80,6 +83,12 @@ impl Plugin for DebugPlugin {
             .add_event::<DragEvent>()
             .add_systems(
                 Update,
+                draw_direction_line.run_if(
+                    in_state(AppState::Playing).and_then(in_state(PlayState::ReadyToShoot)),
+                ),
+            )
+            .add_systems(
+                Update,
                 (
                     send_drag_event,
                     handle_drag,
@@ -115,4 +124,16 @@ fn draw_measuring_tape(drag: Res<Drag>, mut lines: ResMut<DebugLines>) {
             lines.line(start.extend(0.0), end.extend(0.0), duration);
         }
     }
+}
+
+fn draw_direction_line(
+    mut lines: ResMut<DebugLines>,
+    ball: Query<&GlobalTransform, With<Ball>>,
+    mouse_position: Res<MousePosition>,
+) {
+    let ball_transform = ball.single();
+    let end = mouse_position.world.extend(0.0);
+    
+
+    lines.line(ball_transform.translation(), end, 0.0);
 }
