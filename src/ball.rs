@@ -212,3 +212,65 @@ fn ball_touched_bottom(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_change_state_on_key_press() {
+        let mut app = App::new();
+        app.add_state::<PlayState>();
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Space);
+        app.insert_resource(input);
+
+        app.add_systems(
+            Update,
+            (play_ball, apply_state_transition::<PlayState>).chain(),
+        );
+
+        app.update();
+
+        let state = app.world.resource::<State<PlayState>>().get();
+        assert_eq!(*state, PlayState::BallInGame);
+    }
+
+    #[test]
+    fn should_change_play_state_on_ball_touching_bottom() {
+        let mut app = App::new();
+        app.add_event::<BallCollisionEvent>();
+        app.add_state::<PlayState>();
+
+        app.world
+            .resource_mut::<NextState<PlayState>>()
+            .set(PlayState::BallInGame);
+
+        let bounding_box = app.world.spawn(BoundingBox).id();
+        let ball = app.world.spawn(Ball { radius: 10.0 }).id();
+
+        app.world
+            .resource_mut::<Events<BallCollisionEvent>>()
+            .send(BallCollisionEvent {
+                ball,
+                with: bounding_box,
+                collision: Collision::Bottom,
+            });
+
+        app.add_systems(
+            Update,
+            (
+                apply_state_transition::<PlayState>,
+                ball_touched_bottom,
+                apply_state_transition::<PlayState>,
+            )
+                .chain(),
+        );
+
+        app.update();
+
+        let state = app.world.resource::<State<PlayState>>().get();
+        assert_eq!(*state, PlayState::ReadyToShoot);
+    }
+}
