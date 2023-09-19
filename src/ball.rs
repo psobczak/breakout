@@ -50,8 +50,6 @@ impl Plugin for BallPlugin {
                     (detect_collision, change_ball_direction, move_ball).chain(),
                     increase_ball_speed.run_if(resource_changed::<Bounces>()),
                     ball_touched_bottom,
-                    follow_paddle,
-                    reset_speed_on_new_life,
                 )
                     .distributive_run_if(
                         in_state(AppState::Playing).and_then(in_state(PlayState::BallInGame)),
@@ -215,8 +213,8 @@ fn follow_paddle(
     ball.translation.y = paddle.translation().y + config.ball.offset_from_paddle;
 }
 
-fn play_ball(input: Res<Input<KeyCode>>, mut state: ResMut<NextState<PlayState>>) {
-    if input.just_pressed(KeyCode::Space) {
+fn play_ball(input: Res<Input<MouseButton>>, mut state: ResMut<NextState<PlayState>>) {
+    if input.just_pressed(MouseButton::Left) {
         state.set(PlayState::BallInGame)
     }
 }
@@ -253,12 +251,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_change_state_on_key_press() {
+    fn should_change_state_on_lmb() {
         let mut app = App::new();
         app.add_state::<PlayState>();
 
-        let mut input = Input::<KeyCode>::default();
-        input.press(KeyCode::Space);
+        let mut input = Input::<MouseButton>::default();
+        input.press(MouseButton::Left);
         app.insert_resource(input);
 
         app.add_systems(

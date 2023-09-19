@@ -8,7 +8,7 @@ ball:
   }
   initial_speed: 200.0
   speed_increase: 1.0
-  offset_from_paddle: 100.0
+  offset_from_paddle: 40.0
 paddle:
   width: 150.0
   height: 15.0
