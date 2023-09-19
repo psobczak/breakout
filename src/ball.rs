@@ -54,7 +54,10 @@ impl Plugin for BallPlugin {
                         in_state(AppState::Playing).and_then(in_state(PlayState::BallInGame)),
                     ),
             )
-            .add_systems(OnExit(PlayState::BallInGame), follow_paddle);
+            .add_systems(
+                OnExit(PlayState::BallInGame),
+                (follow_paddle, reset_speed_on_new_life),
+            );
     }
 }
 
@@ -70,6 +73,20 @@ fn increase_ball_speed(
     for mut speed in &mut balls {
         speed.0.x += speed.0.x * (config.ball.speed_increase / 100.0);
         speed.0.y += speed.0.y * (config.ball.speed_increase / 100.0);
+    }
+}
+
+fn reset_speed_on_new_life(
+    mut balls: Query<&mut Speed, With<Ball>>,
+    game_config: Res<GameConfig>,
+    assets: Res<Assets<Config>>,
+) {
+    let Some(config) = assets.get(&game_config.config) else {
+        panic!("game config could not be loaded")
+    };
+
+    for mut speed in &mut balls {
+        speed.0 = Vec2::new(config.ball.initial_speed, 150.0);
     }
 }
 
